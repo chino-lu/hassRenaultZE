@@ -5,13 +5,13 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
 from .const import (  # pylint: disable=unused-import
-    AVAILABLE_LOCALES,
     CONF_GIGYA_APIKEY,
     CONF_KAMEREON_ACCOUNT_ID,
     CONF_KAMEREON_APIKEY,
     CONF_LOCALE,
     DOMAIN,
 )
+from .renault_api.const import AVAILABLE_LOCALES
 from .pyzeproxy import PyzeProxy
 
 DEFAULT_GIGYA_APIKEY = "3_e8d4g..."
