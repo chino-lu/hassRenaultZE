@@ -3,6 +3,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (  # pylint: disable=unused-import
     CONF_GIGYA_APIKEY,
@@ -12,10 +13,8 @@ from .const import (  # pylint: disable=unused-import
     DOMAIN,
 )
 from .renault_api.const import AVAILABLE_LOCALES
+from .renault_api.utils import get_api_keys_from_myrenault
 from .pyzeproxy import PyzeProxy
-
-DEFAULT_GIGYA_APIKEY = "3_e8d4g..."
-DEFAULT_KAMEREON_APIKEY = "oF09WnK..."
 
 
 class RenaultFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -35,12 +34,13 @@ class RenaultFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         Ask the user for API keys.
         """
         if user_input:
+            locale = user_input[CONF_LOCALE]
+            api_keys = await get_api_keys_from_myrenault(
+                async_get_clientsession(self.hass), locale
+            )
+            user_input[CONF_GIGYA_APIKEY] = api_keys["gigya-api-key"]
+            user_input[CONF_KAMEREON_APIKEY] = api_keys["kamereon-api-key"]
             self.renault_config.update(user_input)
-            if (
-                user_input.get(CONF_GIGYA_APIKEY) == DEFAULT_GIGYA_APIKEY
-                or user_input.get(CONF_KAMEREON_APIKEY) == DEFAULT_KAMEREON_APIKEY
-            ):
-                return self._show_user_form({"base": "invalid_api_keys"})
             return await self.async_step_credentials()
         return self._show_user_form()
 
@@ -50,8 +50,6 @@ class RenaultFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_GIGYA_APIKEY, DEFAULT_GIGYA_APIKEY): str,
-                    vol.Required(CONF_KAMEREON_APIKEY, DEFAULT_KAMEREON_APIKEY): str,
                     vol.Required(CONF_LOCALE): vol.In(AVAILABLE_LOCALES),
                 }
             ),
